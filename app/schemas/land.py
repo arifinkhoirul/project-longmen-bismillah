@@ -4,12 +4,12 @@ from pydantic import BaseModel
 from typing import Optional
 
 
-# ── Land Schemas ──────────────────────────────────────────
 class LandCreate(BaseModel):
     name: str
     width: Optional[float] = None
     length: Optional[float] = None
     total_area: Optional[float] = None
+    image_url: Optional[str] = None
 
 
 class LandUpdate(BaseModel):
@@ -17,6 +17,7 @@ class LandUpdate(BaseModel):
     width: Optional[float] = None
     length: Optional[float] = None
     total_area: Optional[float] = None
+    image_url: Optional[str] = None
 
 
 class LandResponse(BaseModel):
@@ -26,17 +27,18 @@ class LandResponse(BaseModel):
     width: Optional[float]
     length: Optional[float]
     total_area: Optional[float]
+    image_url: Optional[str]
     created_at: datetime
 
     model_config = {"from_attributes": True}
 
 
-# ── Pond Schemas ──────────────────────────────────────────
 class PondCreate(BaseModel):
     name: str
     width: Optional[float] = None
     length: Optional[float] = None
     area: Optional[float] = None
+    image_url: Optional[str] = None
 
 
 class PondUpdate(BaseModel):
@@ -44,6 +46,7 @@ class PondUpdate(BaseModel):
     width: Optional[float] = None
     length: Optional[float] = None
     area: Optional[float] = None
+    image_url: Optional[str] = None
 
 
 class PondResponse(BaseModel):
@@ -53,6 +56,7 @@ class PondResponse(BaseModel):
     width: Optional[float]
     length: Optional[float]
     area: Optional[float]
+    image_url: Optional[str]
     created_at: datetime
 
     model_config = {"from_attributes": True}

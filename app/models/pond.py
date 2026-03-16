@@ -16,6 +16,7 @@ class Pond(Base):
     width: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
     length: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
     area: Mapped[float | None] = mapped_column(Numeric(10, 2), nullable=True)
+    image_url: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     land: Mapped["Land"] = relationship("Land", back_populates="ponds")
