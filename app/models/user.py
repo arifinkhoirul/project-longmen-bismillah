@@ -21,7 +21,6 @@ class User(Base):
     company: Mapped["Company"] = relationship("Company", back_populates="users", foreign_keys=[company_id])
     role: Mapped["Role"] = relationship("Role", back_populates="users")
     password_resets: Mapped[list["PasswordReset"]] = relationship("PasswordReset", back_populates="user")
-    sensor_logs: Mapped[list["SensorLog"]] = relationship("SensorLog", back_populates="recorder")
     cultivation_records: Mapped[list["CultivationRecord"]] = relationship("CultivationRecord", back_populates="recorder")
     opex_records: Mapped[list["OpexRecord"]] = relationship("OpexRecord", back_populates="recorder")
     subscription_payments: Mapped[list["SubscriptionPayment"]] = relationship("SubscriptionPayment", back_populates="paid_by_user")

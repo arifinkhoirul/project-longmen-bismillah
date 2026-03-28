@@ -20,13 +20,21 @@ class AuthService:
         if existing.scalar_one_or_none():
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email sudah terdaftar")
 
-        user = User(name=payload.name, email=payload.email, password=hash_password(payload.password))
+        # ✅ Set role_id = 1 (Boss) otomatis saat register
+        user = User(
+            name=payload.name,
+            email=payload.email,
+            password=hash_password(payload.password),
+            role_id=1,  # Boss
+        )
         db.add(user)
         await db.flush()
 
         company = Company(
-            name=payload.company_name, email=payload.company_email,
-            phone=payload.company_phone, address=payload.company_address,
+            name=payload.company_name,
+            email=payload.company_email,
+            phone=payload.company_phone,
+            address=payload.company_address,
             owner_user_id=user.id,
         )
         db.add(company)
