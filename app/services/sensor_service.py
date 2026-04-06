@@ -97,7 +97,7 @@ class SensorService:
         await self._get_sensor_or_404(db, pond_id, sensor_id, current_user)
         log = SensorLog(
             sensor_id=sensor_id,
-            recorded_by=current_user.id,
+            # recorded_by=current_user.id,
             value=payload.value,
             recorded_at=payload.recorded_at or datetime.now(timezone.utc),
         )

@@ -21,8 +21,11 @@ INVITABLE_ROLES = [ROLE_ADMIN, ROLE_TEKNISI]
 class UserService:
 
     async def _require_boss(self, current_user: User):
-        """Hanya boss (role_id=1) yang boleh manage user."""
-        if current_user.role_id != ROLE_BOSS:
+#        """Hanya boss (role_id=1) yang boleh manage user."""
+#       if current_user.role_id != ROLE_BOSS:
+        """Hanya boss (role_id=1) atau admin (role_id=2) yang boleh manage user."""
+        # Izinkan ROLE_BOSS (1) ATAU ROLE_ADMIN (2)
+        if current_user.role_id not in [ROLE_BOSS, ROLE_ADMIN]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Hanya boss yang dapat mengelola anggota tim"

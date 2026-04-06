@@ -42,7 +42,7 @@ class SensorLogUpdate(BaseModel):
 class SensorLogResponse(BaseModel):
     id: uuid.UUID
     sensor_id: uuid.UUID
-    recorded_by: uuid.UUID
+    recorded_by: Optional[uuid.UUID] = None  # ← ubah jadi Optional
     value: float
     recorded_at: datetime
 
