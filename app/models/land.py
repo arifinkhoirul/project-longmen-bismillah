@@ -20,4 +20,4 @@ class Land(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     company: Mapped["Company"] = relationship("Company", back_populates="lands")
-    ponds: Mapped[list["Pond"]] = relationship("Pond", back_populates="land")
+    ponds: Mapped[list["Pond"]] = relationship("Pond", back_populates="land", cascade="all, delete-orphan")
