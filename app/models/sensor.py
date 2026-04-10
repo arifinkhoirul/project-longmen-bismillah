@@ -18,4 +18,4 @@ class Sensor(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     pond: Mapped["Pond"] = relationship("Pond", back_populates="sensors")
-    logs: Mapped[list["SensorLog"]] = relationship("SensorLog", back_populates="sensor")
+    logs: Mapped[list["SensorLog"]] = relationship("SensorLog", back_populates="sensor", cascade="all, delete-orphan")

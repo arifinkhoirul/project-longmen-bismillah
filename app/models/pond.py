@@ -20,6 +20,6 @@ class Pond(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     land: Mapped["Land"] = relationship("Land", back_populates="ponds")
-    sensors: Mapped[list["Sensor"]] = relationship("Sensor", back_populates="pond")
-    cultivation_records: Mapped[list["CultivationRecord"]] = relationship("CultivationRecord", back_populates="pond")
-    opex_records: Mapped[list["OpexRecord"]] = relationship("OpexRecord", back_populates="pond")
+    sensors: Mapped[list["Sensor"]] = relationship("Sensor", back_populates="pond", cascade="all, delete-orphan")
+    cultivation_records: Mapped[list["CultivationRecord"]] = relationship("CultivationRecord", back_populates="pond", cascade="all, delete-orphan")
+    opex_records: Mapped[list["OpexRecord"]] = relationship("OpexRecord", back_populates="pond", cascade="all, delete-orphan")
