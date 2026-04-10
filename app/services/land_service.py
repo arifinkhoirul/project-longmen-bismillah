@@ -30,6 +30,7 @@ class LandService:
             width=payload.width,
             length=payload.length,
             total_area=payload.total_area,
+            image_url=payload.image_url,
         )
         db.add(land)
         await db.commit()
@@ -79,6 +80,7 @@ class LandService:
             width=payload.width,
             length=payload.length,
             area=payload.area,
+            image_url=payload.image_url,
         )
         db.add(pond)
         await db.commit()
