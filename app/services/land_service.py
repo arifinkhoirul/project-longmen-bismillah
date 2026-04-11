@@ -1,4 +1,5 @@
 import uuid
+import os
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from fastapi import HTTPException, status
@@ -7,6 +8,7 @@ from app.models.land import Land
 from app.models.pond import Pond
 from app.models.user import User
 from app.schemas.land import LandCreate, LandUpdate, LandResponse, PondCreate, PondUpdate, PondResponse
+from sqlalchemy.orm import selectinload
 
 
 class LandService:
@@ -45,13 +47,88 @@ class LandService:
         await db.refresh(land)
         return land
 
+    # async def delete_land(self, db: AsyncSession, land_id: uuid.UUID, current_user: User) -> dict:
+    #     land = await self._get_land_or_404(db, land_id, current_user)
+    #     await db.delete(land)
+    #     await db.commit()
+    #     return {"message": "Land berhasil dihapus"}
+
     async def delete_land(self, db: AsyncSession, land_id: uuid.UUID, current_user: User) -> dict:
-        land = await self._get_land_or_404(db, land_id, current_user)
+        # 1. Ambil data land dengan selectinload (Bungkus dengan kurung agar tidak syntax error)
+        result = await db.execute(
+            select(Land)
+            .options(selectinload(Land.ponds))
+            .where(Land.id == land_id, Land.company_id == current_user.company_id)
+        )
+        land = result.scalar_one_or_none()
+        
+        if not land:
+            raise HTTPException(status_code=404, detail="Land tidak ditemukan")
+
+        # 2. List semua path gambar yang perlu dihapus
+        paths_to_delete = []
+        if land.image_url:
+            paths_to_delete.append(land.image_url)
+        
+        # Iterasi ponds karena sudah di-load menggunakan selectinload
+        for pond in land.ponds:
+            if pond.image_url:
+                paths_to_delete.append(pond.image_url)
+
+        # 3. Hapus data dari Database
         await db.delete(land)
         await db.commit()
-        return {"message": "Land berhasil dihapus"}
+
+        # 4. File Cleanup: Hapus file fisik dari folder uploads
+        for path in paths_to_delete:
+            relative_path = path.lstrip('/')
+            try:
+                if os.path.exists(relative_path):
+                    os.remove(relative_path)
+                    print(f"File cleanup success: {relative_path}")
+            except Exception as e:
+                print(f"File cleanup failed for {relative_path}: {e}")
+
+        return {"message": "Land dan semua file terkait berhasil dihapus"}
+        # 1. Tarik data secara manual dengan selectinload (Eager Loading)
+        # Pastikan tanda kurung ( ) membungkus seluruh select untuk menyambung baris
+        result = await db.execute(
+            select(Land)
+            .options(selectinload(Land.ponds))
+            .where(Land.id == land_id, Land.company_id == current_user.company_id)
+        )
+        land = result.scalar_one_or_none()
+        
+        if not land:
+            raise HTTPException(status_code=404, detail="Land tidak ditemukan")
+
+        # 2. List semua path gambar yang perlu dihapus
+        paths_to_delete = []
+        if land.image_url:
+            paths_to_delete.append(land.image_url)
+        
+        for pond in land.ponds:
+            if pond.image_url:
+                paths_to_delete.append(pond.image_url)
+
+        # 3. Hapus data dari Database
+        await db.delete(land)
+        await db.commit()
+
+        # 4. Cleanup: Hapus file fisik dari folder uploads
+        for path in paths_to_delete:
+            relative_path = path.lstrip('/')
+            try:
+                if os.path.exists(relative_path):
+                    os.remove(relative_path)
+                    print(f"File cleanup success: {relative_path}")
+            except Exception as e:
+                print(f"File cleanup failed for {relative_path}: {e}")
+
+        return {"message": "Land dan semua file terkait berhasil dihapus"}
 
     async def _get_land_or_404(self, db: AsyncSession, land_id: uuid.UUID, current_user: User) -> Land:
+        # Versi standar tanpa selectinload agar dashboard tidak blank/berat
         result = await db.execute(
             select(Land).where(Land.id == land_id, Land.company_id == current_user.company_id)
         )
@@ -95,11 +172,37 @@ class LandService:
         await db.refresh(pond)
         return pond
 
+    # async def delete_pond(self, db: AsyncSession, land_id: uuid.UUID, pond_id: uuid.UUID, current_user: User) -> dict:
+    #     pond = await self._get_pond_or_404(db, land_id, pond_id, current_user)
+    #     await db.delete(pond)
+    #     await db.commit()
+    #     return {"message": "Pond berhasil dihapus"}
+
     async def delete_pond(self, db: AsyncSession, land_id: uuid.UUID, pond_id: uuid.UUID, current_user: User) -> dict:
+        # 1. Ambil data pond sebelum dihapus
         pond = await self._get_pond_or_404(db, land_id, pond_id, current_user)
+        
+        # 2. Simpan path gambarnya ke variabel sementara
+        image_path = pond.image_url
+
+        # 3. Hapus data dari Database
         await db.delete(pond)
         await db.commit()
-        return {"message": "Pond berhasil dihapus"}
+
+        # 4. File Cleanup: Hapus file fisik jika path-nya ada
+        if image_path:
+            # Bersihkan '/' di awal path agar sesuai dengan path folder di server
+            relative_path = os.path.join(os.getcwd(), path.lstrip('/'))
+            try:
+                if os.path.exists(relative_path):
+                    os.remove(relative_path)
+                    print(f"File cleanup success: {relative_path}")
+            except Exception as e:
+                # Kita gunakan try-except supaya kalau gagal hapus file, 
+                # user tidak dapat error 500 (karena data di DB sudah berhasil terhapus)
+                print(f"Gagal menghapus file fisik {relative_path}: {e}")
+
+        return {"message": "Pond dan file gambar berhasil dihapus"}
 
     async def _get_pond_or_404(self, db: AsyncSession, land_id: uuid.UUID, pond_id: uuid.UUID, current_user: User) -> Pond:
         await self._get_land_or_404(db, land_id, current_user)
