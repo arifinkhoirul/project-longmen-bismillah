@@ -1,4 +1,4 @@
-import uuid, secrets
+import uuid, secrets, httpx
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -12,15 +12,29 @@ from app.schemas.auth import (
     ForgotPasswordRequest, ResetPasswordRequest, ChangePasswordRequest,
 )
 from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
+from app.core.config import settings
+
 
 class AuthService:
+
+    async def _verify_recaptcha(self, token: str) -> bool:
+        """Verifikasi reCAPTCHA token ke Google."""
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://www.google.com/recaptcha/api/siteverify",
+                data={
+                    "secret": settings.RECAPTCHA_SECRET_KEY,
+                    "response": token,
+                },
+            )
+            result = response.json()
+            return result.get("success", False)
 
     async def register(self, db: AsyncSession, payload: RegisterRequest) -> RegisterResponse:
         existing = await db.execute(select(User).where(User.email == payload.email))
         if existing.scalar_one_or_none():
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email sudah terdaftar")
 
-        # ✅ Set role_id = 1 (Boss) otomatis saat register
         user = User(
             name=payload.name,
             email=payload.email,
@@ -47,6 +61,15 @@ class AuthService:
         return RegisterResponse(user=UserResponse.model_validate(user), tokens=self._tokens(user))
 
     async def login(self, db: AsyncSession, payload: LoginRequest) -> TokenResponse:
+        # Verifikasi reCAPTCHA jika token dikirim
+        if payload.recaptcha_token:
+            is_valid = await self._verify_recaptcha(payload.recaptcha_token)
+            if not is_valid:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Verifikasi CAPTCHA gagal, silakan coba lagi"
+                )
+
         result = await db.execute(select(User).where(User.email == payload.email))
         user = result.scalar_one_or_none()
         if not user or not verify_password(payload.password, user.password):
@@ -107,5 +130,6 @@ class AuthService:
     def _tokens(self, user: User) -> TokenResponse:
         data = {"sub": str(user.id)}
         return TokenResponse(access_token=create_access_token(data), refresh_token=create_refresh_token(data))
+
 
 auth_service = AuthService()
